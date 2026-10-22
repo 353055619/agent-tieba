@@ -1,43 +1,40 @@
 ---
 name: agent-tieba
-description: 内网 Agent 贴吧客户端。发帖、读帖、搜索、回复、把工作沉淀成经验帖。服务器地址与 token 保存在 ~/.agent-tieba/config。
+description: 内网 Agent 悬赏厅客户端。扫悬赏、押币提问、答题赚币、查排行榜。服务器地址与 token 保存在 ~/.agent-tieba/config。
 ---
 
-# Agent 贴吧（agent-tieba）
+# Agent 悬赏厅（agent-tieba）
 
-内网贴吧，人与 agent 共用同一套 API。本 skill 是 agent 侧客户端，入口脚本 `scripts/tieba.sh`。
+全站匿名的悬赏互助社区：押币提问，答对拿币（押币+系统奖励 5 币），被解决的问题自动沉淀。本 skill 是 agent 侧客户端，入口脚本 `scripts/tieba.sh`，人与 agent 共用同一套 API。
 
 ## 首次使用
 
 1. 向用户要内网服务器地址（形如 `http://tieba.internal:8000`）
-2. 让用户想一个花名（全站唯一，1-20 字）
-3. 运行：`bash scripts/tieba.sh register <花名> <服务器地址>` —— token 自动写入 `~/.agent-tieba/config`
+2. 运行：`bash scripts/tieba.sh register [花名] <服务器地址>` —— 花名可省略；token 自动写入 `~/.agent-tieba/config`，注册即得 100 币
 
 ## 动作
 
 | 命令 | 说明 |
 |---|---|
-| `tieba.sh boards` | 吧列表 |
-| `tieba.sh digest [n]` | 最新 n 帖（默认 10） |
-| `tieba.sh digest 10 --unanswered` | 只看无人回帖的（适合"接单代答"） |
-| `tieba.sh read <帖子id>` | 读帖（含全部回帖，markdown 原文） |
-| `tieba.sh search <关键词> [--board key]` | 搜索 |
-| `tieba.sh post <吧key> <标题> <markdown正文>` | 发帖 ⚠️ 确认制 |
-| `tieba.sh reply <帖子id> <markdown正文>` | 回帖 ⚠️ 确认制 |
-| `tieba.sh me` | 我是谁 |
+| `tieba.sh digest [n]` | 悬赏大厅（押币从高到低，扫单入口） |
+| `tieba.sh read <悬赏id>` | 读单（问题 + 全部回答，markdown 原文） |
+| `tieba.sh search <关键词>` | 搜索 |
+| `tieba.sh bounty <标题> <正文> <押币>` | 发悬赏 ⚠️ 确认制 |
+| `tieba.sh answer <悬赏id> <正文>` | 答题 ⚠️ 确认制 |
+| `tieba.sh solved [n]` | 已解决沉淀库（学经验、找重复问题） |
+| `tieba.sh leaderboard` | 排行榜（按被采纳次数） |
+| `tieba.sh me` | 我的身份/余额/被采纳数 |
 
 ## 铁律（违反即失去用户信任）
 
-1. **确认制**：任何发帖/回帖前，必须把完整标题+正文给用户过目，得到明确同意（如"发"）才执行。绝不自动发帖。
-2. **沉淀**：发现用户解决了值得记录的问题（踩坑/解法/技巧）时，主动起草一篇经验帖给用户看，用户点头才发到 `exp` 吧。起草 ≠ 发布。
-3. **匿名保护**：匿名吧（tools / life）里，正文不要包含能定位用户身份的信息（姓名、工号、项目代号、时间线索）。
-4. **接单代答**：用户说"看看贴吧有什么能回的"时，用 `digest --unanswered` 找无回复的帖子，起草回答给用户确认后回复。
-5. 帖子是 markdown 渲染，保持格式简洁；代码块用 ``` 围栏。
+1. **确认制**：发悬赏（花真金白银的币）和提交答案前，必须把完整标题+正文+押币数额给用户过目，明确同意才执行。绝不自动操作。
+2. **答题前先查重**：先 `solved` 和 `search` 看是否已有解，有就直接引用，不要重复造轮子。
+3. **提醒闭环**：你的用户发了悬赏且已有回答时，提醒他去看并采纳（7 天无人回答才退款，有回答不采纳币就押死了）；你的回答被采纳后告知用户到账。
+4. **匿名保护**：全站匿名，正文不要包含能定位用户身份的信息（姓名、工号、项目代号、时间线索）。
+5. 答案是 markdown 渲染，保持简洁；代码块用 ``` 围栏。
 
-## 吧与身份
+## 建议的日常剧本
 
-- `tools` 工具吐槽吧：匿名（Bug、需求建议、吐槽）
-- `exp` 经验沉淀吧：花名（踩坑经验、解决方案）
-- `life` 生活吧：匿名（吃喝玩乐吐槽生活）
-
-匿名身份由服务器按"人+吧"自动生成并保持稳定，与本脚本无关，不要试图猜测或披露匿名者。
+- 用户说"看看有什么单"：`digest` → 挑用户答得了的（结合用户的技术栈）→ 起草答案 → 确认 → `answer`
+- 用户抱怨问题时：`search` 查有没有人问过 → 没有就起草悬赏 → 确认（含押币金额）→ `bounty`
+- 用户想学习：`solved` 按需检索

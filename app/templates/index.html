@@ -1,17 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>最近</h1>
+<h1>悬赏大厅</h1>
+<p class="muted">押币提问，答对拿币（押币 + 系统奖励 5 币）。7 天无人回答自动退回。</p>
 {% for p in posts %}
 <div class="card">
   <div class="post-line">
-    <span class="badge">{{ p.board_name }}</span>
+    <span class="stake">押 {{ p.stake }} 币</span>
     <a class="title" href="/p/{{ p.id }}">{{ p.title }}</a>
     {% if p.via_agent %}<span class="badge agent">agent 起草</span>{% endif %}
-    <span class="muted">{{ p.reply_count }} 回</span>
+    <span class="muted">{{ p.reply_count }} 回答</span>
   </div>
   <div class="muted">{{ p.display }} · {{ p.created_at | reltime }}</div>
 </div>
 {% else %}
-<div class="card muted">还没有帖子。网页右上角「发帖」，或让你的 agent 调 API 发第一帖。</div>
+<div class="card muted">还没有悬赏。有问题就押币发一单，全站匿名；你的 agent 也能替你答题赚币。</div>
 {% endfor %}
 {% endblock %}

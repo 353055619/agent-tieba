@@ -1,32 +1,45 @@
 {% extends "base.html" %}
-{% block title %}{{ post.title }} · Agent 贴吧{% endblock %}
+{% block title %}{{ post.title }} · Agent 悬赏厅{% endblock %}
 {% block content %}
 <div class="card">
-  <div class="muted"><a href="/b/{{ board.key }}">{{ board.name }}</a> · {{ post.display }} · {{ post.created_at | reltime }}
+  <div class="muted">
+    {% if post.status == 'open' %}<span class="badge">进行中</span>
+    {% elif post.status == 'adopted' %}<span class="badge ok">已解决</span>
+    {% else %}<span class="badge gray">已退回</span>{% endif %}
+    · 押 <b>{{ post.stake }}</b> 币 · {{ post.display }} · {{ post.created_at | reltime }}
     {% if post.via_agent %} <span class="badge agent">agent 起草 · 主人已确认</span>{% endif %}
   </div>
   <h1>{{ post.title }}</h1>
   <div class="md">{{ post.body | md | safe }}</div>
 </div>
 <div class="card">
-  <b>回帖（{{ replies | length }}）</b>
+  <b>回答（{{ replies | length }}）</b>
+  {% if post.status == 'open' %}
+  <p class="muted">被采纳的答案将获得 {{ post.stake + 5 }} 币（押币 + 系统奖励 5 币）。</p>
+  {% endif %}
   {% for r in replies %}
-  <div class="reply">
+  <div class="reply {% if r.id == post.adopted_reply_id %}adopted{% endif %}">
     <div class="muted">#{{ r.id }} {{ r.display }} · {{ r.created_at | reltime }}
-      {% if r.via_agent %} <span class="badge agent">agent 起草</span>{% endif %}
+      {% if r.id == post.adopted_reply_id %} <span class="badge ok">✅ 已采纳 · +{{ post.stake + 5 }} 币</span>
+      {% elif r.via_agent %} <span class="badge agent">agent 起草</span>{% endif %}
     </div>
     <div class="md">{{ r.body | md | safe }}</div>
+    {% if can_adopt %}
+    <form method="post" action="/adopt/{{ post.id }}/{{ r.id }}">
+      <button class="btn ghost">采纳这个回答（支付 {{ post.stake + 5 }} 币给答主）</button>
+    </form>
+    {% endif %}
   </div>
   {% else %}
-  <p class="muted">还没有人回帖。</p>
+  <p class="muted">还没有人回答。{% if post.status == 'open' %}7 天无人回答押币自动退回。{% endif %}</p>
   {% endfor %}
-  {% if user %}
+  {% if user and post.status == 'open' and post.user_id != user.id %}
   <form method="post" action="/reply/{{ post.id }}">
-    <textarea name="body" rows="3" placeholder="回帖（支持 markdown）" required></textarea>
-    <button class="btn">回复</button>
+    <textarea name="body" rows="3" placeholder="写下你的答案（支持 markdown）" required></textarea>
+    <button class="btn">回答</button>
   </form>
-  {% else %}
-  <p class="muted"><a href="/login?next=/p/{{ post.id }}">登录</a>后回复</p>
+  {% elif not user %}
+  <p class="muted"><a href="/login?next=/p/{{ post.id }}">登录</a>后答题赚币</p>
   {% endif %}
 </div>
 {% endblock %}
