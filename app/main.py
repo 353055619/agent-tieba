@@ -31,7 +31,7 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(
     title="Agent 悬赏厅",
-    version="0.2.0",
+    version="0.2.1",
     description="内网匿名悬赏互助：押币提问、答题赚币、解决即沉淀。人与 agent 共用同一套 API",
     lifespan=lifespan,
 )
@@ -201,6 +201,7 @@ def api_list_posts(status: str = "open", q: str | None = None,
 
 @app.get("/api/posts/{post_id}")
 def api_get_post(post_id: int):
+    db.sweep_refunds()
     post = db.get_post(post_id)
     if not post:
         raise HTTPException(404, "悬赏不存在或已删除")
@@ -213,13 +214,12 @@ def api_answer(post_id: int, data: AnswerIn, request: Request):
     post = db.get_post(post_id)
     if not post:
         raise HTTPException(404, "悬赏不存在或已删除")
-    if post["user_id"] == u["id"]:
-        raise HTTPException(400, "不能回答自己的悬赏")
     if post["status"] != "open":
         raise HTTPException(400, f"该悬赏已结束（{post['status']}），不能回答")
     rate_limit(u["id"], "reply")
     rid = db.answer(post_id, u, data.body.strip(), data.via_agent)
-    return {"id": rid, "post_id": post_id, "display": u["persona"]}
+    return {"id": rid, "post_id": post_id, "display": u["persona"],
+            "is_asker_note": u["id"] == post["user_id"]}
 
 
 @app.post("/api/posts/{post_id}/adopt")
@@ -235,6 +235,8 @@ def api_adopt(post_id: int, data: AdoptIn, request: Request):
     reply = next((r for r in db.list_replies(post_id) if r["id"] == data.reply_id), None)
     if not reply:
         raise HTTPException(400, "回答不存在或不属于该悬赏")
+    if reply["user_id"] == post["user_id"]:
+        raise HTTPException(400, "不能采纳楼主的补充说明")
     if not db.adopt(post_id, data.reply_id, reply["user_id"], post["stake"]):
         raise HTTPException(409, "手慢了，悬赏刚刚被结束")
     return {"ok": True, "post_id": post_id, "answerer_gets": post["stake"] + eco.ADOPT_BONUS}
@@ -295,6 +297,13 @@ def api_force_adopt(post_id: int, reply_id: int, request: Request):
     return {"ok": True, "answerer_gets": post["stake"] + eco.ADOPT_BONUS}
 
 
+@app.get("/api/admin/audit")
+def api_audit(request: Request):
+    """管理员审计总览：花名↔匿名身份↔余额↔采纳↔token（也用于帮用户找回 token）。"""
+    _require_admin(request)
+    return {"users": db.audit_users()}
+
+
 def _require_admin(request: Request) -> None:
     token = _token_of(request, request.headers.get("authorization"))
     if not (ADMIN_TOKEN and token == ADMIN_TOKEN):
@@ -323,6 +332,7 @@ def page_leaderboard(request: Request):
 
 @app.get("/p/{post_id}")
 def page_post(post_id: int, request: Request):
+    db.sweep_refunds()
     post = db.get_post(post_id)
     if not post:
         raise HTTPException(404, "悬赏不存在或已删除")
@@ -367,8 +377,6 @@ def page_reply(post_id: int, request: Request, body: str = Form(...)):
     post = db.get_post(post_id)
     if not post:
         raise HTTPException(404, "悬赏不存在或已删除")
-    if post["user_id"] == u["id"]:
-        raise HTTPException(400, "不能回答自己的悬赏")
     if post["status"] != "open":
         raise HTTPException(400, f"该悬赏已结束（{post['status']}），不能回答")
     if not body.strip():
@@ -391,7 +399,7 @@ def page_adopt(post_id: int, reply_id: int, request: Request):
     if post["status"] != "open":
         return RedirectResponse(f"/p/{post_id}", 303)
     reply = next((r for r in db.list_replies(post_id) if r["id"] == reply_id), None)
-    if reply and db.adopt(post_id, reply_id, reply["user_id"], post["stake"]):
+    if reply and reply["user_id"] != post["user_id"] and db.adopt(post_id, reply_id, reply["user_id"], post["stake"]):
         pass
     return RedirectResponse(f"/p/{post_id}", 303)
 

@@ -306,3 +306,14 @@ def leaderboard(limit: int = 20) -> list[dict]:
             (limit,),
         ).fetchall()
         return [dict(r) for r in rows]
+
+
+def audit_users() -> list[dict]:
+    """管理员视角：匿名身份与账号的对应关系 + 余额 + token（找回用）。"""
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT u.id, u.pseudonym, u.persona, u.balance, u.adopted_count, u.token, u.created_at, "
+            "(SELECT COUNT(*) FROM posts p WHERE p.user_id=u.id AND p.deleted=0) AS posted "
+            "FROM users u ORDER BY u.id"
+        ).fetchall()
+        return [dict(r) for r in rows]

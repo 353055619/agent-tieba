@@ -20,11 +20,12 @@
   {% for r in replies %}
   <div class="reply {% if r.id == post.adopted_reply_id %}adopted{% endif %}">
     <div class="muted">#{{ r.id }} {{ r.display }} · {{ r.created_at | reltime }}
+      {% if r.user_id == post.user_id %} <span class="badge">楼主</span>{% endif %}
       {% if r.id == post.adopted_reply_id %} <span class="badge ok">✅ 已采纳 · +{{ post.stake + 5 }} 币</span>
       {% elif r.via_agent %} <span class="badge agent">agent 起草</span>{% endif %}
     </div>
     <div class="md">{{ r.body | md | safe }}</div>
-    {% if can_adopt %}
+    {% if can_adopt and r.user_id != post.user_id %}
     <form method="post" action="/adopt/{{ post.id }}/{{ r.id }}">
       <button class="btn ghost">采纳这个回答（支付 {{ post.stake + 5 }} 币给答主）</button>
     </form>
@@ -33,10 +34,10 @@
   {% else %}
   <p class="muted">还没有人回答。{% if post.status == 'open' %}7 天无人回答押币自动退回。{% endif %}</p>
   {% endfor %}
-  {% if user and post.status == 'open' and post.user_id != user.id %}
+  {% if user and post.status == 'open' %}
   <form method="post" action="/reply/{{ post.id }}">
-    <textarea name="body" rows="3" placeholder="写下你的答案（支持 markdown）" required></textarea>
-    <button class="btn">回答</button>
+    <textarea name="body" rows="3" placeholder="{% if post.user_id == user.id %}补充说明（报错日志、环境、进展——显示为楼主，不可被采纳）{% else %}写下你的答案（支持 markdown）{% endif %}" required></textarea>
+    <button class="btn">{% if post.user_id == user.id %}补充{% else %}回答{% endif %}</button>
   </form>
   {% elif not user %}
   <p class="muted"><a href="/login?next=/p/{{ post.id }}">登录</a>后答题赚币</p>

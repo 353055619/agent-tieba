@@ -63,18 +63,22 @@ cbroke=$(curl -sS -X POST -H "$J" -H "$C" -d '{"title":"C没钱了","body":"x","
 check "本周已回填，余额不足拦截" "余额不足" "$cbroke"
 
 echo "== 4. 回答 =="
-own=$(curl -sS -X POST -H "$J" -H "$A" -d '{"body":"自问自答"}' "$BASE/api/posts/$PID/replies")
-check "不能回答自己的悬赏" "不能回答自己" "$own"
+sup=$(curl -sS -X POST -H "$J" -H "$A" -d '{"body":"补充：版本 3.2.1，macOS 环境"}' "$BASE/api/posts/$PID/replies")
+SUP=$(printf '%s' "$sup" | get_field "['id']")
+check "楼主可补充说明" '"is_asker_note":true' "$sup"
 r1=$(curl -sS -X POST -H "$J" -H "$B" -d '{"body":"试试 `--no-plugin`，我这边 3 秒\n\n```bash\ncodeagent --no-plugin\n```","via_agent":true}' "$BASE/api/posts/$PID/replies")
 RID=$(printf '%s' "$r1" | get_field "['id']")
 check "B回答成功" '"id"' "$r1"
 check "B回答带匿名身份" "\"display\":\"${PB}\"" "$r1"
+check "B回答不是楼主" '"is_asker_note":false' "$r1"
 
 echo "== 5. 采纳 =="
 notasker=$(curl -sS -X POST -H "$J" -H "$B" -d "{\"reply_id\":$RID}" "$BASE/api/posts/$PID/adopt")
 check "非提问者采纳被拒" "只有提问者" "$notasker"
 badreply=$(curl -sS -X POST -H "$J" -H "$A" -d '{"reply_id":99999}' "$BASE/api/posts/$PID/adopt")
 check "采纳不存在的回答被拒" "回答不存在" "$badreply"
+ownnote=$(curl -sS -X POST -H "$J" -H "$A" -d "{\"reply_id\":$SUP}" "$BASE/api/posts/$PID/adopt")
+check "不能采纳楼主补充" "不能采纳楼主" "$ownnote"
 adopt=$(curl -sS -X POST -H "$J" -H "$A" -d "{\"reply_id\":$RID}" "$BASE/api/posts/$PID/adopt")
 check "提问者采纳成功" '"answerer_gets":35' "$adopt"
 readopt=$(curl -sS -X POST -H "$J" -H "$A" -d "{\"reply_id\":$RID}" "$BASE/api/posts/$PID/adopt")
@@ -144,6 +148,12 @@ code=$(curl -sS -o /dev/null -w '%{http_code}' "$BASE/api/posts/$XID")
 if [ "$code" = "404" ]; then ok "删帖后404"; else bad "删帖后仍 ${code}"; fi
 nodel=$(curl -sS -o /dev/null -w '%{http_code}' -X DELETE -H "$C" "$BASE/api/posts/$PID")
 if [ "$nodel" = "403" ]; then ok "普通用户删帖被拒"; else bad "普通用户可删帖：${nodel}"; fi
+noaudit=$(curl -sS -o /dev/null -w '%{http_code}' "$BASE/api/admin/audit")
+if [ "$noaudit" = "403" ]; then ok "非管理员审计被拒"; else bad "非管理员可看审计：${noaudit}"; fi
+audit=$(curl -sS -H "Authorization: Bearer $ADMIN" "$BASE/api/admin/audit")
+check "管理员审计总览含花名" "冒烟A" "$audit"
+check "审计含匿名身份映射" '"persona"' "$audit"
+check "审计含token(找回用)" '"token"' "$audit"
 
 echo "== 10. 限流 =="
 tD=$(curl -sS -X POST -H "$J" -d '{"name":"冒烟D"}' "$BASE/api/register")
