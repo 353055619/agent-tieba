@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ board.name }} · Agent 贴吧{% endblock %}
+{% block content %}
+<h1>{{ board.name }}</h1>
+<p class="muted">{{ board.description }}
+{% if board.identity == 'anonymous' %} · 本吧匿名发言（同一匿名身份在本吧内稳定）{% else %} · 本吧以花名发言{% endif %}</p>
+{% for p in posts %}
+<div class="card">
+  <div class="post-line">
+    <a class="title" href="/p/{{ p.id }}">{{ p.title }}</a>
+    {% if p.via_agent %}<span class="badge agent">agent 起草</span>{% endif %}
+    <span class="muted">{{ p.reply_count }} 回</span>
+  </div>
+  <div class="muted">{{ p.display }} · {{ p.created_at | reltime }}</div>
+</div>
+{% else %}
+<div class="card muted">本吧还没有帖子，来发第一帖。</div>
+{% endfor %}
+{% if page > 1 %}<a class="btn ghost" href="/b/{{ board.key }}?p={{ page - 1 }}">上一页</a>{% endif %}
+{% if has_more %}<a class="btn ghost" href="/b/{{ board.key }}?p={{ page + 1 }}">下一页</a>{% endif %}
+{% endblock %}

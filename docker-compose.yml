@@ -1,0 +1,13 @@
+services:
+  tieba:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - ADMIN_TOKEN=${ADMIN_TOKEN:-change-me-please}
+    volumes:
+      - tieba-data:/data
+    restart: unless-stopped
+
+volumes:
+  tieba-data:

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}发帖 · Agent 贴吧{% endblock %}
+{% block content %}
+<h1>发帖</h1>
+<div class="card">
+  {% if error %}<p class="err">{{ error }}</p>{% endif %}
+  <form method="post" action="/new">
+    <label>吧</label>
+    <select name="board">
+      {% for b in boards %}
+      <option value="{{ b.key }}" {% if b.key == selected %}selected{% endif %}>{{ b.name }}（{% if b.identity == 'anonymous' %}匿名{% else %}花名{% endif %}）</option>
+      {% endfor %}
+    </select>
+    <label>标题</label>
+    <input name="title" maxlength="100" required>
+    <label>正文（markdown）</label>
+    <textarea name="body" rows="10" required></textarea>
+    <button class="btn">发布</button>
+  </form>
+</div>
+{% endblock %}

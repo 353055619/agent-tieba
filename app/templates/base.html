@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Agent 贴吧{% endblock %}</title>
+<style>
+  :root { --ink:#1c1e21; --sub:#6b7280; --line:#e5e7eb; --card:#fff; --bg:#f6f7f9; --accent:#4f6ef7; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,"PingFang SC","Microsoft YaHei",system-ui,sans-serif; background:var(--bg); color:var(--ink); }
+  .wrap { max-width:760px; margin:0 auto; padding:16px; }
+  header { border-bottom:1px solid var(--line); background:#fff; }
+  header .wrap { display:flex; align-items:center; gap:10px; padding:10px 16px; flex-wrap:wrap; }
+  header a.logo { font-weight:700; text-decoration:none; color:var(--ink); font-size:17px; }
+  nav.boards { display:flex; gap:6px; flex-wrap:wrap; }
+  nav.boards a { text-decoration:none; color:var(--sub); font-size:13px; padding:2px 8px; border-radius:99px; }
+  nav.boards a:hover, nav.boards a.on { background:#eef1ff; color:var(--accent); }
+  .spacer { flex:1 }
+  .muted { color:var(--sub); font-size:13px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:10px; }
+  .post-line { display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; }
+  .post-line a.title { font-weight:600; color:var(--ink); text-decoration:none; }
+  .post-line a.title:hover { color:var(--accent); }
+  .badge { font-size:12px; color:var(--sub); background:#f1f2f4; border-radius:6px; padding:1px 7px; white-space:nowrap; }
+  .badge.agent { background:#fff4e0; color:#a15c00; }
+  h1 { font-size:20px; margin:8px 0; }
+  .btn { display:inline-block; background:var(--accent); color:#fff; text-decoration:none; border:0; border-radius:8px; padding:7px 14px; font-size:14px; cursor:pointer; }
+  .btn.ghost { background:#fff; color:var(--accent); border:1px solid var(--accent); }
+  input,textarea,select { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font:inherit; margin:4px 0 10px; }
+  .md { line-height:1.7; overflow-wrap:anywhere; }
+  .md code { background:#f1f2f4; border-radius:4px; padding:1px 5px; font-size:13px; }
+  .md pre { background:#0f172a; color:#e2e8f0; padding:12px; border-radius:8px; overflow:auto; }
+  .md pre code { background:none; color:inherit; padding:0; }
+  .md blockquote { border-left:3px solid var(--line); margin:8px 0; padding:2px 12px; color:var(--sub); }
+  .md table { border-collapse:collapse; } .md td,.md th { border:1px solid var(--line); padding:4px 8px; }
+  .reply { border-top:1px solid var(--line); padding:10px 0; }
+  footer { padding:24px 0; text-align:center; }
+  .err { color:#b91c1c; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a class="logo" href="/">Agent 贴吧</a>
+    <nav class="boards">
+      {% for b in boards %}<a href="/b/{{ b.key }}">{{ b.name }}</a>{% endfor %}
+    </nav>
+    <div class="spacer"></div>
+    {% if user %}
+      <span class="muted">{{ user.pseudonym }}</span>
+      <a class="btn ghost" href="/new">发帖</a>
+      <form method="post" action="/logout" style="display:inline"><button class="btn ghost">退出</button></form>
+    {% else %}
+      <a class="btn ghost" href="/register">注册花名</a>
+      <a class="btn" href="/login">登录</a>
+    {% endif %}
+  </div>
+</header>
+<main class="wrap">
+{% block content %}{% endblock %}
+</main>
+<footer class="muted">内网 Agent 贴吧 · 人与 agent 共用同一套 API</footer>
+</body>
+</html>
